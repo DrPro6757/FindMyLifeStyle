@@ -1,0 +1,76 @@
+{
+  "project_info": {
+    "project_number": "437973898135",
+    "project_id": "fir-login-f23d7",
+    "storage_bucket": "fir-login-f23d7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437973898135:android:1ed40cd256a074a8f4aad2",
+        "android_client_info": {
+          "package_name": "com.firebaselogin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "437973898135-795sca94fnnjnrbv3m1f3tb9tbj7apcp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCewxMpqIJntz0jXu4yQ6v5BXI1B0_uOm8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "437973898135-795sca94fnnjnrbv3m1f3tb9tbj7apcp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:437973898135:android:a07770d71543abb2f4aad2",
+        "android_client_info": {
+          "package_name": "com.lifestyle.fml"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "437973898135-gu50pqkerifvi2ujaaosr7usuqp0ljru.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lifestyle.fml",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "437973898135-795sca94fnnjnrbv3m1f3tb9tbj7apcp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCewxMpqIJntz0jXu4yQ6v5BXI1B0_uOm8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "437973898135-795sca94fnnjnrbv3m1f3tb9tbj7apcp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
