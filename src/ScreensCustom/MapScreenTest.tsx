@@ -27,6 +27,39 @@ const MapScreenTest = ({navigation}) => {
         // getAllEventData()
         // getMyData()
     }, [])
+    
+    const myIdFtn = async()=>{
+    
+      try {
+        let idValue = await AsyncStorage.getItem('USER_DATA_ID')
+        setMyUserData(idValue)
+        console.log('data from async here in login ', myId)
+//          http://localhost:8000/api/users/6632c1fdebc22d5c7fcc5579
+        // return myId;
+        setUpdateState(true)
+
+      } catch (error) {
+        console.log('error',error)
+      }
+  
+    }
+    //6639fcc4e42506e0b5c65f0e
+  const getMyData=()=>{
+    try {
+      axios.get('http://10.0.2.2:8000/api/users/'+myUserID)
+      .then((res)=>{
+        console.log('My User Data :: ', res.data.name)
+        setMyUserData(res.data);
+        //id
+      })
+      .catch((error)=>{
+        console.log('Please check your email id or password ', error)
+      })
+    } catch (error) {
+      console.log('Please check your connection ', error)
+    }    
+    }
+
     const getAllEventData = () => {
         // send a post request to the backend API for Login
         axios.get('http://10.0.2.2:8000/api/eventposts')
@@ -70,17 +103,7 @@ const MapScreenTest = ({navigation}) => {
             return Math.round(elapsed/msPerYear) + ' years ago';
          }
         }
-        const getMyData=()=>{
-          axios.get('http://10.0.2.2:8000/api/users/6639fcc4e42506e0b5c65f0e')
-          .then((res)=>{
-            console.log('My User Data :: ', res.data._id)
-            setMyUserID(res.data._id)
-            setMyUserData(res.data);
-          })
-          .catch((error)=>{
-            console.log('Please check your email id or password ', error)
-          })
-        }
+      
 /// like api
         const onEventPostLike=(id)=>{
           console.log('event id : ',id)
@@ -510,7 +533,7 @@ const MapScreenTest = ({navigation}) => {
             backgroundColor: 'orange',
             // borderWidth: 1,
             // borderColor: 'white',
-          }}
+          }
           >
             <TouchableOpacity //onPress={() => setFilterModal(true)} 
             onPress={()=>navigation.openDrawer()}
