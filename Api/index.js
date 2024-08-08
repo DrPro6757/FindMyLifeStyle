@@ -1016,7 +1016,7 @@ app.put('/api/reelComments/update/:id', async (req, res) => {
 const PORT = 8000;
 mongoose.connect(process.env.MonogoDb_URL).then(() => {
     console.log("mongoose database connected");
-    app.listen(8000, () => {
+    app.listen(process.env.PORT, () => {
         console.log('API is listening on port ', PORT);
     })
 })
