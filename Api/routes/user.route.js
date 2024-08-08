@@ -1,4 +1,12 @@
-const router = require("express").Router()
+// const router = require("express").Router()
+const router = require("express").Router();
+// const { createUser } = require('../controllers/user.controller.js');
+const {RegisterUser, LoginUser, UserData} = require('../controllers/user.controller');
+const { validateUser, validate } = require("../middleware/validator");
+
+
+// const User = require('../models/user.model.js')
+
 // const router = express.Router();
 
 // const User = require('../models/user.model.js');
@@ -8,6 +16,13 @@ const router = require("express").Router()
 router.get('/', (req,res)=>{
     res.send("hello user router")
 })
+
+router.post('/register',validateUser, validate, RegisterUser);
+
+//'/api/users/login'
+router.post('/login',LoginUser);
+
+router.post('/data', UserData);
 // router.get('/',getUsers);
 
 // router.get('/:id',getUser);
