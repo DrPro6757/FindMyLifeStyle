@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const bcrypt = require("bcrypt")
 
 const UserSchema = mongoose.Schema({
     name:{
@@ -13,7 +14,7 @@ const UserSchema = mongoose.Schema({
         unique:true
     },
     password:{
-        type:Number,
+        type:String,
         required:true
     },
     mobile:{
@@ -124,11 +125,28 @@ const UserSchema = mongoose.Schema({
         type:String,
         max:70,
         default:"",
+    },
+    verified:{
+        type:Boolean,
     }
 
 },
 {timestamps:true}
 );
+
+UserSchema.pre('save', async function(next){
+    if(this.isModified('password')){
+       const hash =  await bcrypt.hash(this.password, 8)
+       this.password = hash;
+    }
+
+    next();
+});
+
+UserSchema.methods.comparePassword = async function(password){
+   const result = await bcrypt.compareSync(password, this.password)
+   return result;
+}
 
 const User = mongoose.model("Users",UserSchema);
 
