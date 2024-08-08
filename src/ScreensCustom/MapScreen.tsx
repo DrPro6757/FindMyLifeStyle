@@ -1,15 +1,18 @@
-import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView, Modal, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView, Modal, Alert, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import MapView, { Callout, CalloutSubview, MapCalloutSubview, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import axios from 'axios';
 import GestureRecognizer from 'react-native-swipe-gestures';
 import QRCode from 'react-native-qrcode-svg';
-import { BASE_URL, LIKE_EVENT_POST } from '../Utils/Strings';
+import { BASE_URL, Get_EVENT_POST_COMMENTS, LIKE_EVENT_POST } from '../Utils/Strings';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDistance } from 'geolib';
 import MapViewDirections from 'react-native-maps-directions';
 import LottieView from 'lottie-react-native';
+import Share from 'react-native-share';
+import VideoPlayer from 'react-native-video-controls';
+import Carousel from 'react-native-reanimated-carousel';
 
 const MapScreen = ({ navigation }) => {
   // const navigation = useNavigation();
@@ -18,10 +21,14 @@ const MapScreen = ({ navigation }) => {
 
   const [eventRoute, setEventRoute] = useState(false)
 
+  const [bottomSheet, setBottomSheet] = useState(false)
+  const [eventTypeBottom, setEventTypeBottom] = useState('Public')
+
   //  {"latitude": 51.55078113655277, "longitude": -0.09886354207992554}
   const [myLatitudes, setMyLatitudes] = useState(51.55078113655277)
   const [myLongitudes, setMyLongitudes] = useState(-0.09886354207992554)
   const [allEventPostData, setAllEventPostData] = useState([]);
+  const [PermissionEventPostData, setPermissionEventPostData] = useState([]);
   const [eventInfoModal, setEventInfoModal] = useState(false)
   const [fullScreen, setFullScreen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState([]);
@@ -29,10 +36,17 @@ const MapScreen = ({ navigation }) => {
   const [eventStatus, setEventStatus] = useState('');
   const [myDistance, setMyDistance] = useState();
 
-  const [myUserData, setMyUserData] = useState([])
+  const [myUserData, setMyUserData] = useState('')
   const [myUserID, setMyUserID] = useState([])
+  const [myWishlist, setMyWishlist] = useState([])
   const [updateState, setUpdateState] = useState(false)
+  const [commentList, setCommentList] = useState([])
 
+  const [tab, setTab] = useState('1')
+
+  const [eventOptionsModal, setEventOptionsModal] = useState(false)
+  const [selectedEventCategory, setSelectedEventCategory] = useState('Friends and Family')
+  const [selectedEventType, setSelectedEventType] = useState('events')
 
   const mapNightStyle = [
     {
@@ -1053,7 +1067,7 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
   const fetchWeatherData=async()=>{
     const results = await fetch(weatherUrl);
     const data = await results.json();
-    console.log(JSON.stringify(data, null, 2));
+    // console.log(JSON.stringify(data, null, 2));
     setWeatherData(data);
     // console.log('weather location name = ',weatherData)
 
@@ -1063,19 +1077,88 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
   // AsyncStorage.setItem('isLoggedIn', '')
   useEffect(() => {
     fetchWeatherData()
+    // getMyData()
+    SingedInUserData()
     getAllEventData()
-    getMyData()
-  }, [updateState])
+    // getAllEventsWithPermission()
+  }, [updateState, eventTypeBottom])
   if(!weatherData){
     console.log('Loading Screen')
+  }
+
+  async function SingedInUserData(){
+    const token = await AsyncStorage.getItem('token')
+    axios.post(BASE_URL+'users/data',{token:token})
+    .then((res)=>{
+      console.log('My Acutal data', res.data)
+      setMyUserData(res.data.data)
+    })
+
+  }
+
+  const getMyData = () => {
+    //http://10.0.2.2:8000/api/
+    axios.get(BASE_URL+'users/6639fcc4e42506e0b5c65f0e')
+      .then((res) => {
+        console.log('My User Data :: ', res.data._id)
+        setMyUserID(res.data._id)
+        setMyUserData(res.data);
+        setMyWishlist(res.data.EventsWishList);
+      })
+      .catch((error) => {
+        console.log('Please check your email id or password ', error)
+      })
+  }
+  const getAllEventsWithPermission=()=>{
+    // /api/eventpostsget/viewpermission/:id
+    const userId = myUserData._id;
+
+    axios.get(BASE_URL+'eventpostsget/viewpermission'+ userId)//6638887d3fcacb60081317c5
+    .then((res) => {
+      //6639fcc4e42506e0b5c65f0e
+      console.log('my permission id == ', userId)
+      console.log('event which are permitted == ',res)
+      // console.log('event data for all events ', res.data)
+    })
+    .catch((error) => {
+      console.log('Please check your email id or password ', error)
+    })
   }
   const getAllEventData = () => {
     // send a post request to the backend API for Login
     // http://10.0.2.2:8000/api/
     axios.get(BASE_URL+'eventposts')
       .then((res) => {
-        console.log('event data for all events ', res.data)
-        setAllEventPostData(res.data);
+        // console.log('event data for all events ', res.data)
+        let tempEventData = []
+          res.data.map(item=>{
+            console.log('Permission = ',item.viewPermission)
+            console.log('Permission and my id = ',myUserData._id)
+            if(eventTypeBottom == 'Friends'){
+            if(item.viewPermission == myUserData._id)
+            {
+              tempEventData.push(item);
+
+           console.log('Permission to view ',item.eventName)
+            }
+          }
+            else if('Public'){
+              if(item.viewPermission != myUserData._id)
+            {
+              tempEventData.push(item)
+              // setAllEventPostData(item);
+              console.log('Permission to view without permission',item.eventName)
+              console.log('image path ',item.imageUrl[0].imageUrl[0])
+
+            }
+            }
+          })
+          // console.log('temp event data  = ',tempEventData)
+       setAllEventPostData(tempEventData)
+
+        // setAllEventPostData(res.data);
+          // console.log('Permission to view for all the events',res.data.eventName)
+
       })
       .catch((error) => {
         console.log('Please check your email id or password ', error)
@@ -1116,28 +1199,18 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
       return Math.round(elapsed / msPerYear) + ' years ago';
     }
   }
-  const getMyData = () => {
-    //http://10.0.2.2:8000/api/
-    axios.get(BASE_URL+'users/6639fcc4e42506e0b5c65f0e')
-      .then((res) => {
-        console.log('My User Data :: ', res.data._id)
-        setMyUserID(res.data._id)
-        setMyUserData(res.data);
-      })
-      .catch((error) => {
-        console.log('Please check your email id or password ', error)
-      })
-  }
+ 
   /// like api
   const onEventPostLike = (id) => {
     console.log('event id : ', id)
     const postEventData = {
       userId: "6639fcc4e42506e0b5c65f0e",
     }
-    axios.put('http://localhost:8000/api/eventposts/like/' + id, postEventData)
+    axios.put(BASE_URL+'eventposts/like/' + id, postEventData)
       .then((res) => {
         Alert.alert("You have successfully Liked Event Post")
         console.log(res);
+        getAllEventData()
       })
       .catch((error) => {
         console.log('Event Like Failed ', error)
@@ -1152,7 +1225,30 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
     })
     return isLiked
   }
-
+  const onEventPostJoin = (id) => {
+    console.log('event id : ', id)
+    const postEventData = {
+      userId: "6639fcc4e42506e0b5c65f0e",
+    }
+    axios.put(BASE_URL+'eventposts/join/' + id, postEventData)
+      .then((res) => {
+        Alert.alert("You have successfully Joined Event")
+        console.log(res);
+        getAllEventData()
+      })
+      .catch((error) => {
+        console.log('Event Joining Failed ', error)
+      })
+  }
+  const getJoinStatus = (eventMembersList) => {
+    let isJoined = false
+    eventMembersList.map(item => {
+      if (item == myUserID) {
+        isJoined = true
+      }
+    })
+    return isJoined
+  }
   const selectedEventModal = async (marker) => {
     let tempMembers = marker;
     // let tempMyEventMembers=[]
@@ -1178,6 +1274,55 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
       longitude: props.selectedEvent.location.coordinates[0],
     }
   }
+  const GetAllComments = (props) => {
+    axios.get(BASE_URL + Get_EVENT_POST_COMMENTS + selectedEvent._id)
+        .then((res) => {
+            console.log('All Comments ', res.data);
+            setCommentList(res.data)
+        })
+        .catch((error) => {
+            console.log('Event Post Comment Failed ', error)
+        })
+}
+const sharePostFtn=async(item)=>{
+  // convert file into base64 format
+  const shareoptioins = {
+    message:item.imageUrl,
+}
+try {
+  const ShareResponse = await Share.open(shareoptioins);
+  console.log(JSON.stringify(ShareResponse));
+} catch (error) {
+  console.log('error message sharing :', error)
+}
+}
+const AddToWishListFtn=(id)=>{
+  console.log('event id : ', id)
+  const postEventData = {
+    eventId: id,
+  }
+  axios.put(BASE_URL+'users/wishlist/' + '6639fcc4e42506e0b5c65f0e', postEventData)
+    .then((res) => {
+      Alert.alert("You have successfully Added Event To Wishlist")
+      console.log(res);
+      getAllEventData()
+      getMyData()
+    })
+    .catch((error) => {
+      console.log('Event Addition to wishlist Failed ', error)
+    })
+}
+const getWishlistStatus=(id)=>{
+
+  let isAdded = false
+  myWishlist.map(item => {
+    if (item == id) {
+      isAdded = true
+    }
+  })
+  return isAdded
+}
+
   const SelectedEventInModal = (props) => {
     console.log('Event lat and long ', props.selectedEvent.location.coordinates[0])
     //         const dateEventPosted = new Date((props.selectedEvent.postTimeDate.seconds + props.selectedEvent.postTimeDate.nanoseconds / 1000000000) * 1000);
@@ -1237,16 +1382,62 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
         }}>
 
           <View style={{ flex: 1 }} >
-            {
-              props.selectedEvent.imageUrl === undefined || props.selectedEvent.imageUrl === "" ?
-                <Image
-                  source={(require('../Images/user.png'))}
-                  style={[styles.postImage, { width: '100%', height: 580, }]}
-                /> :
-                <Image source={{ uri: props.selectedEvent.imageUrl }}
-                  style={[styles.postImage, { width: '100%', height: 580, resizeMode: 'contain' }]}
-                />
-            }
+          <View 
+          style={[styles.postImage, { width: '100%', height: 580,//backgroundColor:'#0e0e0e'
+         }]}
+          >
+        {
+                    //  props.selectedEvent.imageUrl[0].imageUrl.lenght > 0  ? // && imageState == false ?
+                      // <Image source={{ uri: imagesMultiple[0].filename }} //imageData.assets[0].uri
+                      //   style={{ width: '100%', height: 200, borderRadius: 10, borderWidth: 1, borderColor: 'black', alignSelf: 'center', marginLeft: 20, marginTop: 10 }} />
+                    <View style={{alignSelf:'center'}}>
+                      <Carousel
+                      // loop
+                      width={width/1.3}
+                      height={width / 1}
+                      autoPlay={false}
+                      
+                      // data={[...new Array(6).keys()]}
+                      data={ props.selectedEvent.imageUrl[0].imageUrl}
+                      scrollAnimationDuration={1000}
+                      // onSnapToItem={(index) => [console.log('current index:', index),setStopAutoScroll(false),
+                    //   index == 0 ? setPostType('post') : index == 1 ? setPostType('live') : index == 2
+                    // ? setPostType('event') : index == 3 ? setPostType('story') : 
+                    // [setPostType('reel'),{openCameraReel}]]}
+                      renderItem={({ item,index }) => (
+                          <View 
+                           style={{flex:1, width:'100%',borderWidth:5,borderColor:'green', height:400,
+                           backgroundColor:'white'// marginLeft:80
+                          }}
+                          >
+                           
+                              
+                              <Image source={{ uri: item.imageUrl }} //imageData.assets[0].uri
+                         style={{ width: '100%', height: 350, borderWidth:1, borderColor:'red'
+                         // borderRadius: 10, borderWidth: 1, 
+                      //   borderColor: 'black', alignSelf: 'center', marginLeft: 20, marginTop: 10 
+                        }}/>
+                        {/* {item.imageUrl?item.iamgUrl : null} */}
+                        {/* <Text style={{color:'white', height:100, width:200}}>url 
+                        </Text> */}
+                              
+                          </View>
+                      )}
+                  /> 
+                  </View>
+                      // :
+                      // <Text style={{color:'#707070', width: '100%', height: 200}}> 
+                      //   Image will appear hear</Text>
+                        //  <Image source={require('../Images/user.png')} //imageData.assets[0].uri
+                        //  style={{ width: '100%', height: 330, tintColor:'white',//borderRadius: 10, //borderWidth: 1, 
+                        // // borderColor: 'black', 
+                        //  //alignSelf: 'center', marginLeft: 20, marginTop: 10
+                        //  }}/>
+                              
+                      
+                  }
+          </View>
+           
             <TouchableOpacity style={{ width: 40, height: 40, top: 10, position: 'absolute', right: 10 }}
             >
               <Image source={require('../Images/list.png')}
@@ -1258,10 +1449,10 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
           </View>
           {/* like comment share wishlist functions  */}
           <View style={{
-            height: 100, width: '100%', backgroundColor: 'black',
+            height: 120, width: '100%', backgroundColor: 'black',
             justifyContent: 'space-between', flexDirection: 'row'
           }}>
-            <View style={{ flexDirection: 'row' }}>
+            <View style={{ flexDirection: 'row'}}>
               <View>
                 <TouchableOpacity onPress={() => onEventPostLike(props.selectedEvent._id)}>
 
@@ -1280,12 +1471,32 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                 {
                   props.selectedEvent.postLikes.length > 0
                     ?
+                    props.selectedEvent.postLikes.length == 1
+                    ?
+                    <Text style={{ color: 'white', fontSize: 14, margin: 10 }}>{props.selectedEvent.postLikes.length} like</Text>
+                    :
                     <Text style={{ color: 'white', fontSize: 14, margin: 10 }}>{props.selectedEvent.postLikes.length} likes</Text>
                     :
                     // <Text style={{color:'white', fontSize:14, margin:10}}>0 likes</Text>
                     null
 
                 }
+
+            <Text style={{ color: 'white' }}>
+                  {
+                 commentList.length > 0
+                 ?
+                 commentList.length == 1
+                 ?
+                 <Text style={{ color: 'white', fontSize: 14, margin: 10 }}>{commentList.length} comment</Text>
+                 :
+                 <Text style={{ color: 'white', fontSize: 14, margin: 10 }}>{commentList.length} comments</Text>
+                 :
+                 // <Text style={{color:'white', fontSize:14, margin:10}}>0 likes</Text>
+                 null
+                
+                }
+            </Text>
 
               </View>
 
@@ -1296,32 +1507,28 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                 <Image source={(require('../Images/comment.png'))}
                   style={{ height: 35, width: 35, tintColor: 'white', margin: 10 }}
                 />
-                <Text style={{ color: 'white' }}>{
-                  props.selectedEvent.postLikes.length + 'comments'
-                    ?
-                    props.selectedEvent.postLikes.length
-                    :
-                    null
-                }</Text>
+                
               </TouchableOpacity>
-              <TouchableOpacity>
 
+              <TouchableOpacity onPress={()=>sharePostFtn(props.selectedEvent)}>
                 <Image source={(require('../Images/send.png'))}
                   style={{ height: 35, width: 35, tintColor: 'white', margin: 10 }}
                 />
               </TouchableOpacity>
             </View>
+            
+
             <View>
-              <TouchableOpacity onPress={() => AddToWishListFtn(item)}>
+              <TouchableOpacity onPress={() => AddToWishListFtn(props.selectedEvent._id)}>
                 {
-                  // getWishListStatus(item)?
+                  getWishlistStatus(props.selectedEvent._id)?
                   <Image source={(require('../Images/wishlistAdded.png'))}
                     style={{ height: 35, width: 35, margin: 10 }}
                   />
-                  // :
-                  // <Image source={(require('../Images/wishList.png'))}
-                  // style={{height:35, width:35, tintColor:'white',margin:10}}
-                  // />
+                  :
+                  <Image source={(require('../Images/wishList.png'))}
+                  style={{height:35, width:35, tintColor:'white',margin:10}}
+                  />
                 }
 
 
@@ -1330,6 +1537,8 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
             </View>
 
           </View>
+
+        
 
           {/* </View> */}
           <TouchableOpacity onPress={() => [setEventInfoModal(false), setFullScreen(false)]}
@@ -1354,7 +1563,7 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
               Posted By
             </Text>
             <TouchableOpacity style={{ flexDirection: 'row' }}
-              onPress={() => navigation.navigate('UsersProfiles', { data: props.selectedEvent.userId })}
+              onPress={() => [setEventInfoModal(false),navigation.navigate('UsersProfiles', { data: props.selectedEvent.userId })]}
             >
 
               {
@@ -1377,20 +1586,10 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
             </TouchableOpacity>
 
           </View>
-          <View>
-            <Text style={{ color: '#fff', marginLeft: 15, fontSize: 20 }}>
-              {props.selectedEvent.caption}</Text>
-          </View>
+       
+           {/* Navigate to Route Screen */}
 
-          <View>
-            <Text style={{ color: '#fff', marginLeft: 15, fontSize: 20, fontWeight: 'bold' }}>
-              Description</Text>
-            <Text numberOfLines={3} ellipsizeMode='tail'
-              style={{ fontSize: 20, color: '#fff', marginLeft: 25, marginVertical: 10 }}>
-              {props.selectedEvent.eventDescription}</Text>
-          </View>
-
-          <View style={{width:'100%', height:70, justifyContent:'center', alignItems:'center'}}>
+           <View style={{width:'100%', height:70, justifyContent:'center', alignItems:'center'}}>
           <TouchableOpacity onPress={() => [ setEventInfoModal(false),
           //navigation.navigate('Route'),
           navigation.navigate('Route',{data:props.selectedEvent, userLat:myLatitudes, userLong:myLongitudes})
@@ -1413,10 +1612,11 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
             </TouchableOpacity>
             </View>
 
+            {/* QR CODE STUFF */}
 
           <View style={{ flexDirection: 'row', padding: 20, height: 200, width: '100%', alignSelf: 'center', backgroundColor: eventStatus == 'Active' ? 'green' : 'orange', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ color: 'blue', fontWeight: '600', fontSize: 20, width: 100 }}>Scan QR Code To Know
-              Your Status</Text>
+            <Text style={{ color: 'blue', fontWeight: '600', fontSize: 20, width: 100 }}>Scan QR Code To View
+              More On Web</Text>
             <QRCode
               value={
                 `${props.selectedEvent.eventName} posted by ${props.selectedEvent.name} with status ${qrCodeValue}`
@@ -1431,78 +1631,45 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
             />
           </View>
 
-
-
-
-
-
-          <View style={[styles.detailBox, {
-            marginLeft: 20, borderWidth: 0,
-            marginVertical: 5, justifyContent: 'space-evenly', backgroundColor: 'black'
-          }]}>
-            <TouchableOpacity onPress={() => { setEventInfoModal(false) }}>
-              <View
-                style={{
-                  height: 35, borderRadius: 12, width: 120, borderWidth: 1,
-                  borderColor: 'black', backgroundColor: 'blue'
-                }}
-              >
-                <Text style={{ marginTop: 3, alignSelf: 'center', color: 'white' }}>View Later</Text>
-              </View>
-            </TouchableOpacity>
-
-            {
-              // later
-              // props.selectedEvent.userId !== myID
-              //  ?
-              // getJoinStatusConfirm()
-              // ?
-              <TouchableOpacity style={{ flexDirection: 'row' }}
-                onPress={() => Alert.alert('You Have Already Joined This Event')}
-              >
-                <View
-                  style={{
-                    height: 35, borderRadius: 12, width: 120, borderWidth: 1,
-                    borderColor: 'black', backgroundColor: '#3373C4',
-                  }}
-                >
-                  <Text
-                    style={{ marginTop: 3, alignSelf: 'center', color: 'white' }}>
-                    Joined
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              // :
-              // <TouchableOpacity style={{ flexDirection: 'row' }}
-              //   onPress={() => getJoinStatus() ? Alert.alert('Request Has Already Been Sent'): [JoinEventFtn(selectedEvent),getFcmTokenFunction(selectedEvent)
-              //   ]}
-              // >
-              //   <View
-              //     style={{
-              //       height: 35, borderRadius: 12, width: 120, borderWidth: 1,
-              //       borderColor: 'black', backgroundColor: getJoinStatus() ? '#FF337B' : '#46D300',
-              //     }}
-              //   >
-              //     <Text
-              //       style={{ marginTop: 3, alignSelf: 'center', color: 'white' }}>
-              //       {
-              //        getJoinStatus()
-              //           ?
-              //           'Request Sent'
-              //           :
-              //           'Join'
-              //       }
-              //     </Text>
-              //   </View>
-              // </TouchableOpacity>
-              // :
-              // null
-            }
-
+          {/* Tab Options */}
+          
+      <View style={{flexDirection:'row', marginVertical:20}}>
+        <TouchableOpacity style={{width:'50%', height:50, backgroundColor: tab == '1' ?'red' : 'white', justifyContent:'center',
+      alignItems:'center', borderWidth:1, borderColor:'green'}}
+      onPress={()=>setTab('1')}
+      >
+          <Text style={{color:tab == '1' ?'white' : 'black', fontSize:22, fontWeight:'500'}}>Event Details</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{width:'50%', height:50, backgroundColor: tab == '2' ?'red' : 'white', justifyContent:'center',
+      alignItems:'center', borderWidth:1, borderColor:'green'}}
+      onPress={()=>setTab('2')}
+      >
+          <Text style={{color:tab == '2' ?'white' : 'black', fontSize:22, fontWeight:'500'}}>Join Event</Text>
+        </TouchableOpacity>
+      </View>
+         
+           
+          {
+            tab == '1'
+            ?
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 140 }}>
+            
+             {/* Event Description */}
+          <View>
+            <Text style={{ color: '#fff', marginLeft: 15, fontSize: 20, fontWeight: 'bold' }}>
+              Description</Text>
+            <Text numberOfLines={3} ellipsizeMode='tail'
+              style={{ fontSize: 20, color: '#fff', marginLeft: 25, marginVertical: 10 }}>
+              {props.selectedEvent.eventDescription}</Text>
           </View>
 
+             {/* Event Caption */}
+          <View>
+            <Text style={{ color: '#fff', marginLeft: 15, fontSize: 20 }}>
+              {props.selectedEvent.caption}</Text>
+          </View>
 
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginBottom: 140 }}>
+            {/* Event Distance */}
             <View style={[styles.detailBox, { backgroundColor: 'black' }]}>
               {
                 myDistance !== null ? <Text style={{ marginLeft: 10, color: '#fff', fontSize: 16, fontWeight: '500' }}>
@@ -1513,6 +1680,7 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                   </Text>
               }
             </View>
+
             {/* <View style={[styles.detailBox, { backgroundColor: 'black' }]}>
                       {
                         props.selectedEvent.eventName !== null ? <Text style={{ marginLeft: 10, color: '#fff', fontSize: 16, fontWeight: '500' }}>
@@ -1524,11 +1692,8 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                       }
                     </View> */}
 
-
-
-
-
-
+             
+            {/* Event Member joined */}
             <View style={[styles.detailBox, { backgroundColor: 'black' }]}>
               {
                 props.selectedEvent.eventMembersList.length !== 0 || props.selectedEvent.eventMembersList.length !== undefined ? <Text style={{ marginLeft: 10, color: '#fff', fontSize: 16, fontWeight: '500' }}>
@@ -1539,7 +1704,8 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                   </Text>
               }
             </View>
-
+            
+            {/* Event Total Members */}
             <View style={[styles.detailBox, { backgroundColor: 'black' }]}>
 
               <TouchableOpacity style={{ flexDirection: 'row' }}
@@ -1558,6 +1724,8 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
               </TouchableOpacity>
 
             </View>
+
+            {/* Event Data */}
             <View style={[styles.detailBox, { backgroundColor: 'black' }]}>
               {
                 props.selectedEvent.eventDate != null ? <Text style={{ marginLeft: 10, color: '#fff', fontSize: 16, fontWeight: '500' }}>
@@ -1568,6 +1736,8 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                   </Text>
               }
             </View>
+
+            {/* Event Time */}
             <View style={[styles.detailBox, { backgroundColor: 'black' }]}>
               {
                 props.selectedEvent.eventTime != null ? <Text style={{ marginLeft: 10, fontSize: 16, fontWeight: '500', color: '#fff' }}>
@@ -1605,8 +1775,88 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
             </View>
 
           </View>
+          :
+
+
+            // { 
+            //   props.selectedEvent.ticketFreeAmenities ? 
+              <View style={[styles.detailBox, {
+                marginLeft: 20, borderWidth: 0, height: 180,
+                marginVertical: 20, justifyContent: 'space-evenly', backgroundColor: 'black'
+              }]}>
+                <TouchableOpacity style={{ width: '65%', height: '95%', backgroundColor: '#1e1e1e', }}
+                  onPress={() => { setEventInfoModal(false); } }>
+
+                  <Text style={{ marginTop: 3, alignSelf: 'center', color: 'white', fontSize: 20, fontWeight: '600' }}>
+                    {props.selectedEvent.ticketFreeAmenities ? props.selectedEvent.ticketFreeAmenities : ''}
+                    Anna's Jokes+ Home Made Lunch + Anna's Home Made Snacks
+                    + Lol=Lot's of Love</Text>
+                  <Text style={{ marginVertical: 10, alignSelf: 'center', color: '#3373C4', fontSize: 20, fontWeight: '600' }}>
+                    Free</Text>
+
+                </TouchableOpacity>
+
+                <View
+                  style={{ width: '30%' }}
+                >
+                  {/* #3373C4 */}
+                  <TouchableOpacity
+                    onPress={() => [Alert.alert('Event Joined Successfully'), onEventPostJoin(props.selectedEvent._id)]}
+                    style={{
+                      height: 50, backgroundColor: '#3373C4', borderRadius: 10, justifyContent: 'center', marginVertical: 5,
+                      alignItems: 'center'
+                    }}
+                  >
+
+                    {getJoinStatus(props.selectedEvent.eventMembersList) ?
+                      <Text
+                        style={{ alignSelf: 'center', color: 'white', fontSize: 20, fontWeight: '700' }}>
+                        Joined
+                      </Text>
+                      :
+                      <Text
+                        style={{ alignSelf: 'center', color: 'white', fontSize: 20, fontWeight: '700' }}>
+                        Join
+                      </Text>}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{
+                      height: 50, backgroundColor: '#3373C4', borderRadius: 10, justifyContent: 'center',
+                      alignItems: 'center', flexDirection: 'row'
+                    }}
+                  >
+
+                    <TouchableOpacity>
+                      <Text
+                        style={{ alignSelf: 'center', color: 'white', fontSize: 20, fontWeight: '700' }}>
+                        -
+                      </Text>
+                    </TouchableOpacity>
+                    <Text
+                      style={{ alignSelf: 'center', color: 'white', fontSize: 20, fontWeight: '700' }}>
+                      0
+                    </Text>
+                    <TouchableOpacity>
+                      <Text
+                        style={{ alignSelf: 'center', color: 'white', fontSize: 20, fontWeight: '700' }}>
+                        +
+                      </Text>
+                    </TouchableOpacity>
+
+                  </TouchableOpacity>
+                </View>
+              </View>
+              // :
+              // null
+              // }
+              
+   
+          
+          }
 
         </View>
+  
         {/* </ScrollView> */}
       </View>
     )
@@ -1616,6 +1866,7 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
     <View style={{ flex: 1, height: '100%', width: '100%' }}>
   
       <MapView
+      
         style=//{StyleSheet.absoluteFill}
         {{ width: '100%', height: '100%' }}
         mapType= {time == 'day'? 'hybrid':'standard'}
@@ -1633,23 +1884,23 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
 
         {
           allEventPostData.length > 0 ?
-            allEventPostData && allEventPostData.map((marker, index) => {
+            allEventPostData && 
+            allEventPostData.map((marker, index) => {
               return (
-
                 //  <Marker coordinate={marker.eventLocation}  longitude: marker.eventLocation.longitude 
                 <Marker coordinate={{ latitude: marker.location.coordinates[1], longitude: marker.location.coordinates[0] }}
                   title='Test Map marker'
                   description='Test map marker with custom image'
                   // icon={require('../Images/user.png')}
                   key={index}
-                  onPress={() => selectedEventModal(marker)}
-
+                  onPress={() => [selectedEventModal(marker), GetAllComments(marker)]}
+                
                 >
                   <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
 
 
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                      <TouchableOpacity onPress={() => selectedEventModal(marker)}
+                      <TouchableOpacity onPress={() =>  [selectedEventModal(marker), GetAllComments(marker)]}
                       //onPress={() => { console.log('button clicked'); setFilterModal(true) }}
                       >
 
@@ -1659,13 +1910,13 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                         <View style={{
                           position: "absolute",
                         }}>
-
                           {
-                            marker.imageUrl === undefined || marker.imageUrl === ''
+                            //later
+                            marker.imageUrl[0].imageUrl[0] === ''
                               ?
                               null
                               :
-                              <Image source={{ uri: marker.imageUrl }}
+                              <Image source={{ uri: marker.imageUrl[0].imageUrl[0] }}
                                 style={{ height: 50, width: 50, borderRadius: 25, marginLeft: 13, marginTop: 5 }} />
                           }
                         </View>
@@ -1684,11 +1935,12 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
                         >
 
                           {
-                            marker.imageUrl === undefined || marker.imageUrl === ""
+                            //later
+                            marker.imageUrl[0].path === undefined || marker.imageUrl[0].path === ""
                               ?
                               null
                               :
-                              <Image source={{ uri: marker.imageUrl }} resizeMode='cover'
+                              <Image source={{ uri: marker.imageUrl[0].path }} resizeMode='cover'
                                 style={{
                                   width: 30, height: 30, borderRadius: 15
                                 }}
@@ -1759,24 +2011,84 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
 
 
       <View 
-      style={{height:50, width:70, //backgroundColor:'orange',
-       justifyContent:'center',alignItems:'center', borderRadius:10,
+      style={{height:50, width:'95%', //backgroundColor:'orange',
+      flexDirection:'row',
+       justifyContent:'space-between',alignItems:'center', borderRadius:10,
       position:'absolute', bottom:60, right:10}}>
-      <TouchableOpacity //onPress={()=>setFilterModal(true)}
-      >
-        <Text style={{color:'white', fontWeight:'900',fontSize:22}}>
+     
+     <View>
+      <Text style={{color:'white', fontWeight:'900',fontSize:22}}>
           {/* {weatherData?.weather[0].main == 'Rain' ? weatherData?.weather[0].main :'Sunny'} */}
           {weatherData?.weather[0].main}
         </Text>
 
         <Text style={{color:'white', fontWeight:'900',fontSize:25}}>{Math.round(weatherData?.main.temp)}°C</Text>
-
+      </View>
+     
+      <TouchableOpacity onPress={()=>setBottomSheet(true)}
+      >
+      
         <Image source={require('../Images/list.png')}
         style={{width:40, height:40, tintColor:'orange'}}
         />
 
       </TouchableOpacity>
+     
       </View>
+     
+     {/* Bottom Sheet */}
+     <GestureRecognizer>
+     <Modal transparent
+     visible={bottomSheet}
+     onRequestClose={()=>setBottomSheet(false)}
+     >
+      <View style={styles.bottomSheetView}>
+        
+        
+        <View style={styles.bottomSheetHeading}>
+          </View>
+
+          <TouchableOpacity onPress={()=>[setEventTypeBottom('Public'), setBottomSheet(false)]}
+          style={styles.bottomSheetHeadingButton}
+          >
+            <Text style={styles.bottomSheetHeadingButtonText}>Public</Text>
+            <View style={{width:70, height:40, borderWidth:1, borderColor:"orange", borderRadius:20,
+          justifyContent:'center'}}>
+            {
+              eventTypeBottom == 'Public'
+              ?
+              <View style={{width:60, height:30, borderWidth:1, borderColor:"red", borderRadius:20,
+          backgroundColor:'white', alignSelf:'center'}}>
+
+            </View>
+            :
+            null
+            }
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={()=>[setEventTypeBottom('Friends'), setBottomSheet(false)]}
+          style={styles.bottomSheetHeadingButton}>
+            <Text style={styles.bottomSheetHeadingButtonText}>Friends And Family</Text>
+            <View style={{width:70, height:40, borderWidth:1, borderColor:"orange", borderRadius:20,
+          justifyContent:'center'}}>
+            {
+              eventTypeBottom == 'Friends'
+              ?
+              <View style={{width:60, height:30, borderWidth:1, borderColor:"red", borderRadius:20,
+          backgroundColor:'white', alignSelf:'center'}}>
+
+            </View>
+            :
+            null
+            }
+            </View>
+          </TouchableOpacity>
+        
+      </View>
+     </Modal>
+     </GestureRecognizer>
+     
+     {/* Event Info Modal */}
       <GestureRecognizer
         style={{ flex: 1 }}
         onSwipeUp={() => setFullScreen(true)}
@@ -1809,7 +2121,7 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
               >
                 {/* <View style={{ flex: 1 }}> */}
 
-                <SelectedEventInModal selectedEvent={selectedEvent} />
+                <SelectedEventInModal selectedEvent={selectedEvent}  />
 
                 {/* </View> */}
               </View>
@@ -1819,11 +2131,15 @@ const destination = {latitude: 51.565497352241934, longitude: -0.104339607059955
         </Modal>
 
       </GestureRecognizer>
+    
+      
 
 
     </View>
   )
 }
+const { height, width } = Dimensions.get('screen');
+
 const styles = StyleSheet.create({
   backgroundVideo: {
     position: 'absolute',
@@ -1915,8 +2231,8 @@ const styles = StyleSheet.create({
     // margin: 5,
     // alignSelf: 'center',
     // borderRadius: 30,
-    borderWidth: 1,
-    borderColor: 'black',
+    // borderWidth: 1,
+    // borderColor: 'black',
   },
   detailBox: {
     flexDirection: 'row',
@@ -1931,5 +2247,37 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     borderRadius: 10,
   },
+  bottomSheetView:{
+    width:'100%',
+    height:'60%',
+    position:'absolute',
+    bottom:0,
+    backgroundColor:'orange'
+  },
+  bottomSheetHeading:{
+    height:'20%',
+    width:'100%',
+    backgroundColor:'blue',
+    justifyContent:'space-evenly',
+    flexDirection:'row',
+    alignItems:'center'
+  },
+  bottomSheetHeadingButton:{
+    width:'100%',
+    height:50,
+    borderWidth:1,
+    // borderRadius:10,
+    flexDirection:'row',
+    justifyContent:'space-between',
+    padding:10,
+    alignItems:'center',
+    borderBlockColor:'white',
+    backgroundColor:'black'
+  },
+  bottomSheetHeadingButtonText:{
+    color:'white',
+    fontWeight:'800',
+    fontSize:20
+  }
 });
 export default MapScreen
