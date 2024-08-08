@@ -1,8 +1,16 @@
 const express = require('express');
 const nodemon = require('nodemon')
+const cors = require("cors")
+const passport = require("passport")
+const cookieSession = require("cookie-session")
+const nodemailer = require("nodemailer")
 // const router = require("express").Router()
+const userRouter = require('./routes/user.route')
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken')
+const passportSetup = require("./passport")
 const User = require('./models/user.model.js');
+const userVerification = require('./models/UserVerification.model.js')
 const EventPostData = require('./models/PostEvent.model.js');
 const UserPostData = require('./models/PostUser.model.js');
 const EventCommentData = require('./models/PostEventComments.model.js');
@@ -10,19 +18,60 @@ const UserCommentData = require('./models/PostUserComments.model.js')
 const PostReelData = require('./models/PostReeels.model.js');
 const ReelCommentData = require('./models/ReelComment.model.js')
 
-const userRoute = require('./routes/user.route.js');
+// const userRoute = require('./routes/user.route.js');
 const authRoute = require('./routes/auth.js');
 const upload = require('../Api/middleware/upload.js');
 
 const app = express();
-// const dotenv = require("dotenv");
+  //"type": "module",
+
+const dotenv = require("dotenv");
+
+const Jwt_Secret = "jfsaljdfkljaiewoeuroiwnx()n8934729847ankajfjfasdl092130[]]9kjfa"
+
+/// nodemailer to send verification link
+const AdminEmail='abdulrehmancsjob@gmail.com'
+const AdminPass = 'Neversaynever4332'
+// console.log('auth email', process.env.AUTH_EMAIL)
+// let transporter = nodemailer.createTransport({
+//     service: "Gmail",
+//     auth: {
+//         user: AdminEmail,
+//         pass: AdminPass,
+//     }
+// })
+// transporter.verify((error, success)=>{
+//     if(error){
+//         console.log(error)
+//     }else{
+//         console.log("nodemailer ready for messages")
+//         console.log(success)
+//     }
+// })
+
+app.use(
+    cookieSession({
+        name:"session",
+        keys:["fmlKeys"],
+        maxAge: 24*60*60*100
+    })
+)
+app.use(passport.initialize())
+app.use(passport.session())
+app.use(
+    cors({
+        origin:"http://localhost:3000",
+        methods: "GET,POST,PUT,DELETE",
+        credentials:true,
+    })
+)
 // const morgan = require("morgan");
 // const helmet = require("helmet");
 
 // const jsonwebtoken=require("jsonwebtoken");
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-// dotenv.config();
+dotenv.config();
 
 // using api through routes
 // app.use("socialapp/api/users", userRoute);
@@ -35,6 +84,46 @@ app.use(express.urlencoded({ extended: false }));
 app.get('/', (req, res) => {
     res.send('working');
 });
+
+// google responsen api
+app.get('/auth/google',passport.authenticate("google",["profile","email"]))
+// Google Authentication Api's
+app.get('/auth/google/callback', 
+passport.authenticate("google",{
+    successRedirect:process.env.CLIENT_URL,
+    failureRedirect:"/login/failed",
+})
+)
+// auth failure api
+app.get('/login/failed',(req,res)=>{
+    res.status(401).json({
+        error:true,
+        message:'Log in failure'
+    })
+})
+//auth success api
+app.get('/auth/login/success',(req,res)=>{
+    if(req.user){
+        res.status(200).json({
+            error:false,
+            message:'Succcess fully loged in',
+            user:req.user,
+        })
+    }else{
+        res.status(403).json({
+            error:true,
+            message:'Not Authorize'
+        })
+    }
+})
+
+// logout api
+app.get('/auth/logout',(req,res)=>{
+    req.logout(
+        res.redirect(process.env.CLIENT_URL)
+    )
+})
+
 
 // get all the users from db
 app.get('/api/users', async (req, res) => {
@@ -87,32 +176,44 @@ app.delete('/api/users/:id', async (req, res) => {
 });
 
 // ragister or create a new user
-app.post('/api/users', async (req, res) => {
-    try {
-        const user = await User.create(req.body);
-        res.status(200).json(user);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+app.post('/api/users', userRouter)
 
 // login or signin a new user
-app.post('/api/users/login', async (req, res) => {
-    try {
-        const user = await User.findOne({ email: req.body.email })
-        !user && res.status(200).json({ status: false, message: "user not found" });
-        if (user) {
-            if (req.body.password == user.password) {
-                res.status(200).json({ status: true, message: "Loged in Successfully ", data: user })
-            } else {
-                res.status(200).json({ status: false, message: "Wrong Password" })
-            }
-        }
-        // && res.status(200).json({status:true, message:"User found successfully ", data:user})
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
+// app.post('/api/users/login', async (req, res) => {
+//     try {
+//         const user = await User.findOne({ email: req.body.email })
+//         !user && res.status(200).json({ status: false, message: "user not found" });
+//         if (user) {
+//             if (req.body.password == user.password) {
+//                 const token = jwt.sign({email:user.email}, Jwt_Secret)
+//                 res.status(200).json({ status: "ok", message: "Token saved successfully ", data: token })
+//             } else {
+//                 res.status(200).json({ status: false, message: "Wrong Password" })
+//             }
+//         }
+//         // && res.status(200).json({status:true, message:"User found successfully ", data:user})
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// });
+
+app.use('/api/users', userRouter)
+
+// get user data after log in
+app.post('/api/users', userRouter)
+// data', async (req, res) => {
+//     const {token} = req.body
+//     try {
+//         const user = jwt.verify(token,Jwt_Secret)
+//         const useremail = user.email
+//         User.findOne({email:useremail}).then(data=>{
+//             return res.send({status:"ok",data:data})
+//         })
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// });
+
 
 
 // ragister or create a new user
@@ -183,6 +284,33 @@ app.put('/api/users/savepost/:id', async (req, res) => {
             res.status(200).json({ status: true, message: "User Post Liked successfully" })
 
         // }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+// Add Event To WishList API
+app.put('/api/users/wishlist/:id', async (req, res) => {
+    try {
+        const user = await User.findOne({ _id: req.params.id })
+        let isAdded = false
+
+        user.EventsWishList.map(item => {
+            if (item == req.body.eventId) {
+                isAdded = true
+            }else{
+                isAdded = false
+            }
+        })
+        if (isAdded) {
+            const res1 = await User.updateOne({ _id: req.params.id }, { $pull: { EventsWishList: req.body.eventId } });
+            res.status(200).json({ status: true, message: "Event removed from wishlist succesfully" })
+        } else {
+            const res2 = await User.updateOne({ _id: req.params.id }, { $push: { EventsWishList: req.body.eventId } });
+
+
+            res.status(200).json({ status: true, message: "Event Added To WishList successfully" })
+
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -408,7 +536,7 @@ app.post('/api/eventposts/add', async (req, res) => {//upload.single("imageUrl")
         const eventPost = await EventPostData.create({
             eventName: req.body.eventName,
             caption: req.body.caption,
-            username: req.body.username,
+            // username: req.body.username,
             userId: req.body.userId,
             location: {
                 type: "Point",
@@ -424,7 +552,19 @@ app.post('/api/eventposts/add', async (req, res) => {//upload.single("imageUrl")
             rank: req.body.rank,
             level: req.body.level,
             email: req.body.email,
-            userCoverPic: req.body.userCoverPic,
+            eventType: req.body.eventType,
+            ticketFreeAmenities: req.body.ticketFreeAmenities,
+            ticket1Amenities: req.body.ticket1Amenities,
+            ticket2Amenities: req.body.ticket2Amenities,
+            ticket3Amenities: req.body.ticket3Amenities,
+            ticket4Amenities: req.body.ticket4Amenities,
+            ticket5Amenities: req.body.ticket5Amenities,
+            ticket1Price: req.body.ticket1Price,
+            ticket2Price: req.body.ticket2Price,
+            ticket3Price: req.body.ticket3Price,
+            ticket4Price: req.body.ticket4Price,
+            ticket5Price: req.body.ticket5Price,
+            // userCoverPic: req.body.userCoverPic,
             profilePic: req.body.profilePic,
         });
         if (req.file) {
@@ -442,6 +582,21 @@ app.post('/api/eventposts/add', async (req, res) => {//upload.single("imageUrl")
 // "caption":"location post by last user ",
 // 	"username":"last user",
 // 	"userId":"6639fcc4e42506e0b5c65f0e",
+
+// get all the permitted events for user from db
+app.get('/api/eventposts/users/:id', async (req, res) => {
+    try {
+        const eventPost = await EventPostData.find({ viewPermission: req.params.id });
+        if (!eventPost) {
+            res.status(200).json({ status: false, message: "no permitted data found for this Event Post" });
+        } else {
+            res.status(200).json(eventPost);
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+})
 
 
 // get one event post from db
@@ -494,6 +649,62 @@ app.get('/api/eventposts', async (req, res) => {
     }
 });
 
+// add userId's to the view permission
+// Like user post API
+app.put('/api/eventposts/viewPermission/:id', async (req, res) => {
+    try {
+        const eventPost = await EventPostData.findOne({ _id: req.params.id })
+        let isAdded = false
+
+        eventPost.viewPermission.map(item => {
+            if (item == req.body.userId) {
+                isAdded = true
+            }else{
+                isAdded = false
+            }
+        })
+        if (isAdded) {
+            const res1 = await EventPostData.updateOne({ _id: req.params.id }, { $pull: { viewPermission: req.body.userId } });
+            res.status(200).json({ status: true, message: "User Permission removed succesfully" })
+        } else {
+            const res2 = await EventPostData.updateOne({ _id: req.params.id }, { $push: { viewPermission: req.body.userId } });
+
+
+            res.status(200).json({ status: true, message: "User Permission Added successfully" })
+
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// get all the event posts with my view permission
+// app.get('/api/eventpostsget/viewpermission/:id', async (req, res) => {
+//     try {
+//         // const user = await User.findOne({ _id: req.params.id })
+//         const eventPost = await EventPostData.find({});
+//         const currentUser = await User.findOne({ _id: req.body.userId });
+
+//         let isPermitted = false
+//         eventPost.viewPermission.map(item => {
+//             if (item == req.body.userId) {
+//                 isPermitted = true
+//                 return eventPost
+//             }
+//         })
+//         if (isPermitted) {
+//             // const eventPostData = eventPost.find({})
+//             res.status(200).json(eventPost)
+//         } else{
+//             res.status(500).json({ status: false, message: "no permission found" })
+
+//         }
+        
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// });
+
 // get all the event posts by any user from db
 app.get('/api/eventpostsget/:id', async (req, res) => {
     try {
@@ -534,6 +745,33 @@ app.put('/api/eventposts/like/:id', async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 });
+
+// Join event post API
+app.put('/api/eventposts/join/:id', async (req, res) => {
+    try {
+        const eventPost = await EventPostData.findOne({ _id: req.params.id })
+        let isAdded = false
+
+        eventPost.eventMembersList.map(item => {
+            if (item == req.body.userId) {
+                isAdded = true
+            }
+        })
+        if (isAdded) {
+            const res1 = await EventPostData.updateOne({ _id: req.params.id }, { $pull: { eventMembersList: req.body.userId } });
+            res.status(200).json({ status: true, message: "Event Member removed succesfully" })
+        } else {
+            const res2 = await EventPostData.updateOne({ _id: req.params.id }, { $push: { eventMembersList: req.body.userId } });
+
+
+            res.status(200).json({ status: true, message: "Event Member Added successfully" })
+
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 
 
 
@@ -773,10 +1011,10 @@ app.put('/api/reelComments/update/:id', async (req, res) => {
 
 
 
-
+   // 'mongodb+srv://FMLDB:iP24ga9StAn3kyYh@findmylifestyle.oyw4bft.mongodb.net/UsersInfo?retryWrites=true&w=majority&appName=Findmylifestyle'
 // connection string with db and server
 const PORT = 8000;
-mongoose.connect('mongodb+srv://FMLDB:iP24ga9StAn3kyYh@findmylifestyle.oyw4bft.mongodb.net/UsersInfo?retryWrites=true&w=majority&appName=Findmylifestyle').then(() => {
+mongoose.connect(process.env.MonogoDb_URL).then(() => {
     console.log("mongoose database connected");
     app.listen(8000, () => {
         console.log('API is listening on port ', PORT);
