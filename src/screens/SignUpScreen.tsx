@@ -34,9 +34,9 @@ import { BASE_URL, REGISTER_USER } from '../Utils/Strings';
 // import firestore from '@react-native-firebase/firestore';
 const SignUpScreen = () => {
   const route = useRoute();
-  const [email, setEmail] = useState('kali@gmail.com');
-  const [password, setPassword] = useState("123456");
-  const [name, setName] = useState("Kali");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [dob, setDob] = useState(null);
   const [myAge, setMyAge] = useState(0);
   const [gender, setGender] = useState(null);
@@ -849,6 +849,7 @@ const interestsArrays = [
       .then((res)=>{
         Alert.alert("You have successfully registered your email")
         console.log(res);
+        navigation.navigate('LoginScreen')
       })
       .catch((error)=>{
         console.log('Registeration Failed ', error)
