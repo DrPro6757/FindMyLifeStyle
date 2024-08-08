@@ -12,7 +12,7 @@ const PostEventSchema = mongoose.Schema({
     },
     username:{
         type:String,
-        required:true
+        // required:true
     },
     userCoverPic:{
         type:String,
@@ -26,8 +26,11 @@ const PostEventSchema = mongoose.Schema({
         type:String,
     },
     imageUrl:{
-        type:String,
-        required:true
+        type : Array,
+        default:[],
+        required : true
+        // type:{type:String,required:true},
+        // file:[]
     },
     location:{
         type:{type:String,required:true},
@@ -52,10 +55,74 @@ const PostEventSchema = mongoose.Schema({
     email:{
         type:String,
     },
+    ticketFreeAmenities:{
+        type:String,
+    },
+    ticket1Amenities:{
+        type:String,
+    },
+    ticket2Amenities:{
+        type:String,
+    },
+    ticket3Amenities:{
+        type:String,
+    },
+    ticket4Amenities:{
+        type:String,
+    },
+    ticket5Amenities:{
+        type:String,
+    },
+    ticket1Prices:{
+        type:String,
+    },
+    ticket2Prices:{
+        type:String,
+    },
+    ticket3Prices:{
+        type:String,
+    },
+    ticket4Prices:{
+        type:String,
+    },
+    ticket5Prices:{
+        type:String,
+    },
+    eventType:{
+        type:String,
+    },
+    viewPermission:{
+        type: Array,
+        default:[]
+    },
+    eventCategory:{
+        type:String,
+    },
+    importantNote:{
+        type:String,
+        max:200
+    },
+    eventStartDate:{
+        type:String,
+    },
     eventDate:{
         type:String,
     },
+    eventEndDate:{
+        type:String,
+    },
+    eventDays:{
+        type:String,
+    },
     eventTime:{
+        type:String,
+        max:200
+    },
+    eventStartTime:{
+        type:String,
+        max:200
+    },
+    eventEndTime:{
         type:String,
         max:200
     },
@@ -114,3 +181,4 @@ module.exports = PostEvent;
 //     type:"Point",
 //     coordinates:[parseFloat(req.body.longitude), parseFloat(req.body.latitude)]
 // }
+// {path: '', fileType:''}
