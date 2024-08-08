@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Alert, TextInput, Dimensions, TouchableOpacity, StatusBar, FlatList, Platform, Image, Modal, ScrollView } from 'react-native'
-import React, { isValidElement, useEffect, useState } from 'react'
+import React, { constructor, isValidElement, useEffect, useState } from 'react'
 import firebase from '@react-native-firebase/app';
 import database from '@react-native-firebase/database';
 import auth from '@react-native-firebase/auth';
@@ -7,7 +7,7 @@ import { LoginManager, AccessToken } from 'react-native-fbsdk-next';
 // import firestore from '@react-native-firebase/firestore';
 import { useNavigation, StackActions } from '@react-navigation/native'
 import SignUpScreen from './SignUpScreen';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import firestore from '@react-native-firebase/firestore';
@@ -16,9 +16,13 @@ import Loader from './Loader';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Video from 'react-native-video';
 import axios from 'axios';
-import { BASE_URL, LOGIN_USER, REGISTER_USER } from '../Utils/Strings';
+import { BASE_URL, GoogleAuthClientId, LOGIN_USER, REGISTER_USER } from '../Utils/Strings';
 import {useDispatch} from 'react-redux';
 import { getMyUserDataAction } from '../Redux/actionsUser';
+import {GoogleLogin, GoogleLoginResponse, GoogleLoginResponseOffline} from 'react-google-login'
+import { gapi, loadAuth2 } from 'gapi-script';
+
+
 
 let getName;
 let getEmail;
@@ -30,6 +34,15 @@ let tcCheck = '';
 let tcChecked = '';
 
 const LoginScreen = () => {
+
+  constructor()
+  {
+    // super();
+    this.state={
+      userGoogleInfo : {},
+      loaded:false
+    }
+  }
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState("");
@@ -46,13 +59,18 @@ const LoginScreen = () => {
   const photoSetOkay = 'set';
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: '437973898135-795sca94fnnjnrbv3m1f3tb9tbj7apcp.apps.googleusercontent.com',
-    });
-    getTC();
-    AsyncStorage.setItem("PHOTOSET", photoSetOkay)
-  }, [])
+
+  // var accessToken = gapi.auth.getToken().access_token;
+  
+  
+
+  // useEffect(() => {
+  //   GoogleSignin.configure({
+  //     webClientId: '437973898135-795sca94fnnjnrbv3m1f3tb9tbj7apcp.apps.googleusercontent.com',
+  //   });
+  //   getTC();
+  //   AsyncStorage.setItem("PHOTOSET", photoSetOkay)
+  // }, [])
 
   const termsAndConditionsAccept = async () => {
     setAcceptTC(true);
@@ -68,21 +86,82 @@ const LoginScreen = () => {
     setTCModal(!TCModal);
   }
 
-  const GoogleLogin = async () => {
-    try {
-      // Get the users ID token
-      const { idToken } = await GoogleSignin.signIn();
-
-      // Create a Google credential with the token
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-
-      // Sign-in the user with the credential
-      return auth().signInWithCredential(googleCredential);
-      navigation.dispatch(StackActions.replace('TabNavigationCustom'));
-    } catch (error) {
-      console.log(error);
-    }
+  const onSuccess=(res)=>{
+    console.log(res)
   }
+  const onFailure=()=>{
+    console.log("Google Auth Error")
+  }
+
+  const AuthGoogleSignin=()=>{
+    axios.get(BASE_URL+'/auth/google/callback')
+    .then((res) => {
+      console.log('Permission to view for all the events',res)
+
+    })
+    .catch((error) => {
+      console.log('Please check your email id or password ', error)
+    })
+  }
+  useEffect(() => {
+    GoogleSignin.configure({
+      offlineAccess:true,
+      webClientId:'133281800065-7poa50ejkihu4q3bdsej4gs6ifb937mq.apps.googleusercontent.com',
+    })
+  }, [])
+  
+   const GoogleSignInFunction=async()=>{
+    try {
+      console.log('singin with google pressed')
+
+      await GoogleSignin.hasPlayServices()
+      console.log('singin with google ')
+
+    const userInfo = await GoogleSignin.signIn()
+    console.log('singin with google ', userInfo.user.email)
+
+    this.setState({
+      userGoogleInfo : userInfo,
+      loaded: true
+    })
+    } catch (error) {
+      console.log('Google Sign in error = ',error) 
+    }
+    
+  }
+
+  const LoginWithGoogle =()=>{
+    console.log('Google Sign in pressed')
+    return (
+      <GoogleLogin
+      clientId = {GoogleAuthClientId}
+      buttonText='Login'
+      onSuccess={onSuccess}
+      onFailure={onFailure}
+      cookiePolicy={'single_host-origin'}
+      isSignedIn={true}
+      />
+    )
+
+  }
+
+  // const GoogleLogin = async () => {
+  //   try {
+  //     // Get the users ID token
+  //     const { idToken } = await GoogleSignin.signIn();
+
+  //     // Create a Google credential with the token
+  //     const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+
+  //     console.log('google credential ', googleCredential)
+
+  //     // Sign-in the user with the credential
+  //     // return auth().signInWithCredential(googleCredential);
+  //     // navigation.dispatch(StackActions.replace('TabNavigationCustom'));
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
   async function onFacebookButtonPress() {
     // Attempt login with permissions
     const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
@@ -113,7 +192,7 @@ const LoginScreen = () => {
   //     )
   }
   let myDataIdHere = '';
-  const HandleLoginUser= async()=>{
+  async function HandleLoginUser (){
     console.log('email ', email)
     console.log('password ', password)
 
@@ -124,7 +203,7 @@ const LoginScreen = () => {
       
       // send a post request to the backend API for Login
       // http://10.0.2.2:8000/api/
-      await axios.post(BASE_URL+'users/login',userData)
+       await axios.post(BASE_URL+'users/login',userData)
       .then((res)=>{
         if(res.data.message == "user not found"){
           Alert.alert(res.data.message)
@@ -133,15 +212,20 @@ const LoginScreen = () => {
         {
         Alert.alert(res.data.message)
       }else{
-        Alert.alert(res.data.message)
+        // Alert.alert(res.data.message)
         
-        myDataIdHere = res.data.data._id;
-        setPermanentValue();
+        // myDataIdHere = res.data.data._id;
+        // setPermanentValue();
         // const myDataId = AsyncStorage.getItem('USER_DATA_ID');
-        AsyncStorage.setItem('isLoggedIn', 'true');
-        
-        dispatch(getMyUserDataAction(res.data))
-        
+        // AsyncStorage.setItem('isLoggedIn', 'true');
+        console.log('Token data', res.data)
+        if(res.data.status == "ok"){
+          Alert.alert('User Logged In Successfully')
+        }
+        // redux commented later
+        // dispatch(getMyUserDataAction(res.data))
+        AsyncStorage.setItem("token",res.data.data)
+        AsyncStorage.setItem('isLoggedIn', JSON.stringify(true))
         navigation.dispatch(StackActions.replace('DrawerTabNavigation'));//CustomNavigator
       }
         
@@ -150,7 +234,8 @@ const LoginScreen = () => {
         console.log('Please check your email id or password ', error)
       })
    
-    
+      // navigation.dispatch(StackActions.replace('DrawerTabNavigation'));//CustomNavigator
+
   }
   const setPermanentValue = async()=>{
     console.log('My Data On Login Screen',myDataIdHere);
@@ -295,7 +380,7 @@ const LoginScreen = () => {
               placeholderTextColor='white'
               value={password}
               onChangeText={(value) => setPassword(value)}
-              secureTextEntry={true}
+              // secureTextEntry={true}
             />
             {/* <Text style={{color:'red'}}>Wrong Password</Text> */}
             <TouchableOpacity style={styles.addButton} onPress={() => HandleLoginUser()}>
@@ -338,20 +423,38 @@ const LoginScreen = () => {
             </TouchableOpacity>
           </View>
 
+          <GoogleSigninButton
+          onPress={GoogleSignInFunction}
+          size={GoogleSigninButton.Size.Wide}
+          color={GoogleSigninButton.Color.Dark}
+          style={{width:300, height:70}}
+          />
+          {
+            this.state.loaded ? 
+            <View>
+              <Text>user name : {this.state.userGoogleInfo.user.name}</Text>
+              <Text>user name : {this.state.userGoogleInfo.user.name}</Text>
+              <Image source={{uri: this.state.userGoogleInfo.user.photo}}
+              style={{height:100, width:100}}
+              />
+            </View>
+            :
+            <Text>not signed in </Text>
+          }
 
 
 
           {Platform.OS === 'android' ? (
             <View>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={{ backgroundColor: '#f5e7ea', width: 300, alignSelf: 'center', height: 50, marginBottom: 10 }}
-                onPress={() => { GoogleLogin() }}
+                onPress={() => { AuthGoogleSignin() }}
               >
                 <Text style={{ alignSelf: 'center', marginVertical: 10, color: '#de4d41', fontSize: 20, fontWeight: '700' }}>
                   Sign in with Google</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <TouchableOpacity
-                style={{ backgroundColor: '#f5e7ea', width: 300, alignSelf: 'center', height: 50, marginBottom: 100 }}
+                style={{ backgroundColor: '#f5e7ea', width: 300, alignSelf: 'center', height: 70, marginBottom: 100 }}
                 onPress={() => { _signInWithFaceBook() }}
               >
                 <Text style={{ alignSelf: 'center', marginVertical: 10, color: 'blue', fontSize: 20, fontWeight: '700' }}>
