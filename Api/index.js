@@ -1013,7 +1013,6 @@ app.put('/api/reelComments/update/:id', async (req, res) => {
    // 'mongodb+srv://FMLDB:iP24ga9StAn3kyYh@findmylifestyle.oyw4bft.mongodb.net/UsersInfo?retryWrites=true&w=majority&appName=Findmylifestyle'
 // connection string with db and server
 // assiginging the port 5000 to server 
-// const PORT = 8000
 const PORT= 5000 || proces.env.PORT
 mongoose.connect(process.env.MonogoDb_URL).then(() => {
     console.log("mongoose database connected");
