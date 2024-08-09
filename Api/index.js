@@ -25,7 +25,7 @@ const upload = require('../Api/middleware/upload.js');
 const app = express();
   //"type": "module",
 
-const dotenv = require("dotenv");
+const dotenv = require("dotenv").config();
 
 const Jwt_Secret = "jfsaljdfkljaiewoeuroiwnx()n8934729847ankajfjfasdl092130[]]9kjfa"
 
@@ -71,7 +71,6 @@ app.use(
 // const jsonwebtoken=require("jsonwebtoken");
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-dotenv.config();
 
 // using api through routes
 // app.use("socialapp/api/users", userRoute);
@@ -1013,10 +1012,11 @@ app.put('/api/reelComments/update/:id', async (req, res) => {
 
    // 'mongodb+srv://FMLDB:iP24ga9StAn3kyYh@findmylifestyle.oyw4bft.mongodb.net/UsersInfo?retryWrites=true&w=majority&appName=Findmylifestyle'
 // connection string with db and server
-// const PORT = 8000;
+// const PORT = 8000
+const PORT= 8000 || proces.env.PORT
 mongoose.connect(process.env.MonogoDb_URL).then(() => {
     console.log("mongoose database connected");
-    app.listen(process.env.PORT || 8000, () => {
+    app.listen(PORT, () => {
         console.log('API is listening on port ', PORT);
     })
 })
