@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require("cors")
 const passport = require("passport")
 const cookieSession = require("cookie-session")
-const nodemailer = require("nodemailer")
+// const nodemailer = require("nodemailer")
 // const router = require("express").Router()
 const userRouter = require('./routes/user.route')
 const mongoose = require('mongoose');
@@ -29,8 +29,8 @@ const dotenv = require("dotenv").config();
 const Jwt_Secret = "jfsaljdfkljaiewoeuroiwnx()n8934729847ankajfjfasdl092130[]]9kjfa"
 
 /// nodemailer to send verification link
-const AdminEmail='abdulrehmancsjob@gmail.com'
-const AdminPass = 'Neversaynever4332'
+// const AdminEmail='abdulrehmancsjob@gmail.com'
+// const AdminPass = 'Neversaynever4332'
 // console.log('auth email', process.env.AUTH_EMAIL)
 // let transporter = nodemailer.createTransport({
 //     service: "Gmail",
