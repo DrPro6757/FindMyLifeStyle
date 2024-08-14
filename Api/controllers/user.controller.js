@@ -1,7 +1,7 @@
 // const User = require('../models/user.model');
 const User = require('../models/user.model.js')
 const verificationToken = require('../models/UserVerification.model.js')
-const { generateOTP } = require('../utils/mail.js')
+// const { generateOTP } = require('../utils/mail.js')
 const jwt = require('jsonwebtoken')
 const Jwt_Secret = "jfsaljdfkljaiewoeuroiwnx()n8934729847ankajfjfasdl092130[]]9kjfa"
 const bcrypt = require("bcrypt")
