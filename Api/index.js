@@ -85,14 +85,14 @@ app.get('/', (req, res) => {
 });
 
 // google responsen api
-app.get('/auth/google',passport.authenticate("google",["profile","email"]))
-// Google Authentication Api's
-app.get('/auth/google/callback', 
-passport.authenticate("google",{
-    successRedirect:process.env.CLIENT_URL,
-    failureRedirect:"/login/failed",
-})
-)
+// app.get('/auth/google',passport.authenticate("google",["profile","email"]))
+// // Google Authentication Api's
+// app.get('/auth/google/callback', 
+// passport.authenticate("google",{
+//     successRedirect:process.env.CLIENT_URL,
+//     failureRedirect:"/login/failed",
+// })
+// )
 // auth failure api
 app.get('/login/failed',(req,res)=>{
     res.status(401).json({
