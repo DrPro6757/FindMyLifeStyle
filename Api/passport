@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require("cors")
-const passport = require("passport")
-const cookieSession = require("cookie-session")
+(* const passport = require("passport") *)
+(* const cookieSession = require("cookie-session") *)
 // const nodemailer = require("nodemailer")
 // const router = require("express").Router()
 const userRouter = require('./routes/user.route')
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken')
-const passportSetup = require("./passport")
+(* const passportSetup = require("./passport") *)
 const User = require('./models/user.model.js');
 const userVerification = require('./models/UserVerification.model.js')
 const EventPostData = require('./models/PostEvent.model.js');
@@ -47,7 +47,7 @@ const Jwt_Secret = "jfsaljdfkljaiewoeuroiwnx()n8934729847ankajfjfasdl092130[]]9k
 //         console.log(success)
 //     }
 // })
-
+(* 
 app.use(
     cookieSession({
         name:"session",
@@ -63,7 +63,7 @@ app.use(
         methods: "GET,POST,PUT,DELETE",
         credentials:true,
     })
-)
+) *)
 // const morgan = require("morgan");
 // const helmet = require("helmet");
 
