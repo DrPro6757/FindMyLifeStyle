@@ -66,9 +66,9 @@ const LoginUser = async (req, res) => {
         const user = await User.findOne({ email })
         !user && res.status(200).json({ status: false, message: "user not found" });
         if (user) {
-            const isMatched = await comparePassword(password, user.password)
-            // if (password == user.password) {
-                if(isMatched ){
+            // const isMatched = await comparePassword(password, user.password)
+            if (password == user.password) {
+                // if(isMatched ){
                 const token = jwt.sign({email:user.email}, Jwt_Secret,{
                     expiresIn:'1d'
                 })
