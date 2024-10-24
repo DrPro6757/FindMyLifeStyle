@@ -1,75 +1,85 @@
 const mongoose = require('mongoose');
 
-const LiveUserSchema = mongoose.Schema({
-    caption:{
-        type:String,
-        max:200
+const LiveUserSchema = mongoose.Schema(
+  {
+    liveId: {
+      type: String,
+      required: true,
     },
-    username:{
-        type:String,
-        required:true
+    streamCaption: {
+      type: String,
+      max: 100,
     },
-
-    userId:{
-        type:String,
-        required:true
+    streamName: {
+      type: String,
+      required: true,
     },
-    imageUrl:{
-        type:String,
-    },
-    videoUrl:{
-        type:String,
-    },
-    reelUrl:{
-        type:String,
-    },
-    location:{
-        type:{type:String},
-       coordinates:[],
-    },
-    profilePic:{
-        type:String,
+    streamLive: {
+      type: Boolean,
+      required: true,
     },
 
-    postLikes:{
-        type:Array,
-        default:[],
+    streamCategory: {
+      type: String,
+      required: true,
     },
-    postComments:{
-        type:Array,
-        default:[],
+    streamAudience: {
+      type: Array,
+      default: [],
     },
-    
-    postShares:{
-        type:Array,
-        default:[],
+    streamGifts: {
+      type: Array,
+      default: [],
     },
-    email:{
-        type:String,
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'Users',
     },
-    postDescription:{
-        type:String,
+    liveScore: {
+      type: String,
     },
-    interest:{
-        type:String,
+    leaderBoard: {
+      type: String,
     },
-    userImage:{
-        type:String,
+    favourites: {
+      type: Array,
+      default: [],
     },
-    status:{
-        type:String,
+    wallet: {
+      type: String,
     },
-    fcmTokens:{
-        type:Array,
-        default:[],
-    }
-   
-
-},
-{timestamps:true}
+    fanClub: {
+      type: Array,
+      default: [],
+    },
+    gaurdrians: {
+      type: Array,
+      default: [],
+    },
+    imageUrl: {
+      type: String,
+    },
+    location: {
+      type: {type: String},
+      coordinates: [],
+    },
+    streamLikes: {
+      type: Array,
+      default: [],
+    },
+    streamShares: {
+      type: Array,
+      default: [],
+    },
+    streamDuration: {
+      type: String,
+    },
+  },
+  {timestamps: true},
 );
-LiveUserSchema.index({location:"2dsphere"})
-const LiveUser = mongoose.model("Live_Users",LiveUserSchema);
+LiveUserSchema.index({location: '2dsphere'});
+const LiveUser = mongoose.model('Live_Users', LiveUserSchema);
 
 module.exports = LiveUser;
 
