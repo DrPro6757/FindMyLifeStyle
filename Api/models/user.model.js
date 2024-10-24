@@ -1,153 +1,181 @@
 const mongoose = require('mongoose');
-const bcrypt = require("bcrypt")
+const bcrypt = require('bcrypt');
 
-const UserSchema = mongoose.Schema({
-    name:{
-        type:String,
-        max:40,
-        required:[true, "Please enter name"]
+const UserSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+      max: 40,
+      // required:[true, "Please enter name"]
     },
 
-    email:{
-        type:String,
-        required:true,
-        unique:true
+    email: {
+      type: String,
+      // required:[true, "Please enter email"],
+      unique: true,
     },
-    password:{
-        type:String,
-        required:true
+    phone: {
+      type: Number,
+      unique: true,
     },
-    mobile:{
-        type:String,
-        max:50,
-        // required:true,
-        // unique:true
+    password: {
+      type: String,
+      // required:true
     },
-    gender:{
-        type:String,
-        max:50,
-        required:true
+    mobile: {
+      type: String,
+      max: 50,
+      // required:true,
+      // unique:true
     },
-    dob:{
-        type:String,
-        max:50,
-        // required:true
+    gender: {
+      type: String,
+      max: 50,
+      // required:true
     },
-    address:{
-        type:String,
-        max:100,
+    dob: {
+      type: String,
+      max: 50,
+      // required:true
     },
-    profilePic:{
-        type:String,
-        default:"",
+    address: {
+      type: String,
+      max: 100,
     },
-    coverPic:{
-        type:String,
-        default:"",
+    profilePic: {
+      type: String,
+      default: '',
     },
-    followers:{
-        type:Array,
-        default:[],
+    coverPic: {
+      type: String,
+      default: '',
     },
-    following:{
-        type:Array,
-        default:[],
+    followRequests: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Users',
     },
-    EventsWishList:{
-        type:Array,
-        default:[],
+    followers: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: 'Users',
     },
-    SavedPosts:{
-        type:Array,
-        default:[],
-    },
-    about:{
-        type:String,
-        max:70,
-    },
-    age:{
-        type:Number,
-        default:0,
-    },
-    chatsBy:{
-        type:Array,
-        default:[],
-    },
-    education:{
-        type:String,
-        max:50,
-    },
-    eventsJoined:{
-        type:Array,
-        default:[],
-    },
-    eventsPosted:{
-        type:Number,
-        default:0,
-    },
-    fcmToken:{
-        type:String,
-        default:"",
-    },
-    interest:{
-        type:String,
-        default:""
-    },
-    messageFrom:{
-        type:Array,
-        default:[]
-    },
-    myLikedEvents:{
-        type:Array,
-        default:[],
-    },
-    myLocation:{
-        type: Array,
-        coordinates: [-74.0060, 40.7128]
-    },
-    photos:{
-        type:Array,
-        default:[],
-    },
-    profileLikes:{
-        type:Array,
-        default:[],
-    },
-    relationshipStatus:{
-        type:String,
-        default:"",
-    },
-    onlineStatus:{
-        type:Boolean,
-        default:true,
-    },
-    work:{
-        type:String,
-        max:70,
-        default:"",
-    },
-    verified:{
-        type:Boolean,
-    }
 
-},
-{timestamps:true}
+    sentFollowingRequests: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Users',
+    },
+    following: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Users',
+    },
+    EventsWishList: {
+      type: Array,
+      default: [],
+    },
+    SavedPosts: {
+      type: Array,
+      default: [],
+    },
+    about: {
+      type: String,
+      max: 70,
+    },
+    age: {
+      type: Number,
+      default: 0,
+    },
+    chatsBy: {
+      type: Array,
+      default: [],
+    },
+    education: {
+      type: String,
+      max: 50,
+    },
+    eventsJoined: {
+      type: Array,
+      default: [],
+    },
+    eventsPosted: {
+      type: Number,
+      default: 0,
+    },
+    fcmToken: {
+      type: String,
+      default: '',
+    },
+    interest: {
+      type: String,
+      default: '',
+    },
+    messageFrom: {
+      type: Array,
+      default: [],
+    },
+    myLikedEvents: {
+      type: Array,
+      default: [],
+    },
+    myLocation: {
+      type: Array,
+      coordinates: [-74.006, 40.7128],
+    },
+    photos: {
+      type: Array,
+      default: [],
+    },
+    profileLikes: {
+      type: Array,
+      default: [],
+    },
+    relationshipStatus: {
+      type: String,
+      default: '',
+    },
+    onlineStatus: {
+      type: Boolean,
+      default: true,
+    },
+    work: {
+      type: String,
+      max: 70,
+      default: '',
+    },
+    signUpType: {
+      type: String,
+      required: true,
+    },
+    OTP: {
+      type: Number,
+      // required:true
+    },
+    verifiedEmail: {
+      type: Boolean,
+    },
+    verifiedPhone: {
+      type: Boolean,
+    },
+    twoStepAuth: {
+      type: Boolean,
+    },
+  },
+  {timestamps: true},
 );
 
-UserSchema.pre('save', async function(next){
-    if(this.isModified('password')){
-       const hash =  await bcrypt.hash(this.password, 8)
-       this.password = hash;
-    }
+UserSchema.pre('save', async function (next) {
+  if (this.isModified('password')) {
+    const hash = await bcrypt.hash(this.password, 8);
+    this.password = hash;
+  }
 
-    next();
+  next();
 });
 
-UserSchema.methods.comparePassword = async function(password){
-   const result = await bcrypt.compareSync(password, this.password)
-   return result;
-}
+// later
+UserSchema.methods.comparePassword = async function (password) {
+  const result = await bcrypt.compareSync(password, this.password);
+  return result;
+};
 
-const User = mongoose.model("Users",UserSchema);
+const User = mongoose.model('Users', UserSchema);
 
 module.exports = User;
