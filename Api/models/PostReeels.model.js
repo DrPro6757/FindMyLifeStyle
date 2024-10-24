@@ -1,67 +1,67 @@
 const mongoose = require('mongoose');
 
-const PostReelSchema = mongoose.Schema({
-    caption:{
-        type:String,
-        max:200
+const PostReelSchema = mongoose.Schema(
+  {
+    caption: {
+      type: String,
+      max: 200,
     },
-    username:{
-        type:String,
-        required:true
+    username: {
+      type: String,
     },
 
-    userId:{
-        type:String,
-        required:true
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'Users',
     },
-    reelUrl:{
-        type:String,
-        required:true
-    },
-    profilePic:{
-        type:String,
-    },
-    gifts:{
+    reelUrl: {
       type: Array,
-      default:[]  
+      default: [],
+      required: true,
     },
-    thumbnail:{
-        type:String,
+    thumbnail: {
+      type: String,
+      // required:true
+    },
+    profilePic: {
+      type: String,
+    },
+    gifts: {
+      type: Array,
+      default: [],
+    },
+    postLikes: {
+      type: Array,
+      default: [],
+    },
+    postComments: {
+      type: Array,
+      default: [],
     },
 
-    postLikes:{
-        type:Array,
-        default:[],
+    postShares: {
+      type: Array,
+      default: [],
     },
-    postComments:{
-        type:Array,
-        default:[],
+    email: {
+      type: String,
     },
-    
-    postShares:{
-        type:Array,
-        default:[],
+    postDescription: {
+      type: String,
     },
-    email:{
-        type:String,
+    status: {
+      type: String,
     },
-    postDescription:{
-        type:String,
+    fcmTokens: {
+      type: Array,
+      default: [],
     },
-    status:{
-        type:String,
-    },
-    fcmTokens:{
-        type:Array,
-        default:[],
-    }
-   
-
-},
-{timestamps:true}
+  },
+  {timestamps: true},
 );
-PostReelSchema.index({location:"2dsphere"})
-const PostReel = mongoose.model("Posts_Reels",PostReelSchema);
+PostReelSchema.index({location: '2dsphere'});
+const PostReel = mongoose.model('Posts_Reels', PostReelSchema);
 
 module.exports = PostReel;
 
