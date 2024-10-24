@@ -117,14 +117,17 @@ const RegisterUser = async (req, res) => {
 };
 const SaveEmailWithOTP = async (req, res) => {
   try {
-    const {signUpType, email, OTP, verifiedEmail} = req.body;
-    const OTPCode = '123456';
+    // const {signUpType, email, OTP, verifiedEmail} = req.body;
+    // const OTPCode = '123456';
+
+    const {email} = req.body;
 
     const emailCheck = await User.findOne({email});
     if (emailCheck) {
-      return res.status(200).json({
+      // return
+      res.status(200).json({
         status: 'ok',
-        message: 'User Already Exist, Signup With Other Email',
+        message: 'User Exist',
         data: emailCheck,
         success: true,
       });
@@ -145,21 +148,24 @@ const SaveEmailWithOTP = async (req, res) => {
 
     // const token = await verificationToken.create(verficaitonToken);
     // if (signUpType === 'email') {
-    const payload = {
-      signUpType,
-      email,
-      OTP: OTPCode,
-      verifiedEmail: true,
-    };
-    const user = new User(payload);
-    const userSave = await user.save();
-    const TO = `${email}`;
-    sendOTPEmail(OTPCode, TO);
-    return res.status(201).json({
-      message: 'User created successfully',
-      data: userSave,
-      success: true,
-    });
+    //later
+    // const payload = {
+    //   signUpType,
+    //   email,
+    //   OTP: OTPCode,
+    //   verifiedEmail: true,
+    // };
+    // const user = new User(payload);
+    // const userSave = await user.save();
+    // const TO = `${email}`;
+    // //later
+    // sendOTPEmail(OTPCode, TO);
+    // return res.status(201).json({
+    //   message: 'User created successfully',
+    //   data: userSave,
+    //   success: true,
+    // });
+    //later
     // }
   } catch (error) {
     res.status(500).json({message: error.message});
