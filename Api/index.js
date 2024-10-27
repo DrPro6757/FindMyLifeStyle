@@ -51,7 +51,7 @@ app.use(express.urlencoded({extended: false}));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:8000', //process.env.FRONT_END,
+    origin: 'https://findmylifestyle.onrender.com', //process.env.FRONT_END,http://localhost:8000
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -1909,7 +1909,7 @@ app.get('/api/livestream/live', async (req, res) => {
 // get all the LiveStreams from db
 app.get('/api/livestream', async (req, res) => {
   try {
-    const liveStream = await LiveStreamData.find({});
+    const liveStream = await LiveStreamData.find({}).populate('userId');
     res.status(200).json(liveStream);
   } catch (error) {
     res.status(500).json({message: error.message});
