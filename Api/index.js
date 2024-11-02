@@ -60,7 +60,7 @@ app.use(express.urlencoded({extended: false}));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:8000', //process.env.FRONT_END,http://localhost:8000//https://findmylifestyle.onrender.com
+    origin: 'https://findmylifestyle.onrender.com', //process.env.FRONT_END,http://localhost:8000//https://findmylifestyle.onrender.com
     methods: ['GET', 'POST'],
     credentials: true,
   },
