@@ -58,9 +58,11 @@ app.use(express.json());
 app.use(express.urlencoded({extended: false}));
 
 const server = http.createServer(app);
+const PORTForSocket = 'http://localhost:8000' || proces.env.PORT;
+
 const io = new Server(server, {
   cors: {
-    origin: 'https://findmylifestyle.onrender.com', //process.env.FRONT_END,http://localhost:8000//https://findmylifestyle.onrender.com
+    origin: PORTForSocket, //process.env.FRONT_END,http://localhost:8000//https://findmylifestyle.onrender.com
     methods: ['GET', 'POST'],
     credentials: true,
   },
