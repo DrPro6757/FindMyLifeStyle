@@ -1,6 +1,8 @@
 const express = require('express');
 const nodemon = require('nodemon');
 const cors = require('cors');
+const path = require('path');
+
 const connectDB = require('./config/connectDB.js');
 // const { appi, server } = require('./socket/index.js')
 const {Server} = require('socket.io');
@@ -42,6 +44,13 @@ const dotenv = require('dotenv').config();
 const Jwt_Secret =
   'jfsaljdfkljaiewoeuroiwnx()n8934729847ankajfjfasdl092130[]]9kjfa';
 
+//-------------deployment part-----------------------------//
+
+// const ___dirname = path.resolve()
+// app.use(express.static(path.join(__dirname,"/src/dist")))
+
+//-------------deployment part-----------------------------//
+
 const app = express();
 
 app.use(cookieParser());
@@ -51,7 +60,7 @@ app.use(express.urlencoded({extended: false}));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'https://findmylifestyle.onrender.com', //process.env.FRONT_END,http://localhost:8000
+    origin: 'http://localhost:8000', //process.env.FRONT_END,http://localhost:8000//https://findmylifestyle.onrender.com
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -85,7 +94,10 @@ let myUserId = '';
 const userSocketMap = {}; // this map store corresponding user id ; userId -> socketId
 
 const getReceiverSocketId = receiverId => userSocketMap[receiverId];
+///for handling calls sockets
+let connectedPeers = new Map();
 
+console.log('receiver socket id = ', getReceiverSocketId);
 io.on('connection', async socket => {
   console.log(' connnect user socket with socket id', socket.id); //socket.id
 
@@ -97,10 +109,39 @@ io.on('connection', async socket => {
       `User connected : userId => ${userId}, socketId => ${socket.id}`,
     );
   }
+  ///for handling calls sockets
+  connectedPeers.set(socket.id, socket);
+  ///for handling calls sockets
+
   io.emit('getOnlineUsers', Object.keys(userSocketMap));
 
   console.log(' connnect user socket with socket id', socket.id); //socket.id
   socket.emit('me', socket.id);
+  ///
+  // implement test socket io for real time call
+  // const receiverSocketId = getReceiverSocketId(receiverId);
+  ///  for making call with RTCWEB Socket
+  socket.on('offerOrAnswer', data => {
+    // send to other peers(s) if any
+    for (const [socketID, socket] of connectedPeers.entries()) {
+      // dont't send to self
+      if (socketID !== data.socketID) {
+        console.log(socketID, data.payload.type);
+        socket.emit('offerOrAnswer', data.payload);
+      }
+    }
+  });
+  socket.on('candidate', data => {
+    // send candidate to the other peer(s) if any
+    for (const [socketID, socket] of connectedPeers.entries()) {
+      // dont't send to self
+      if (socketID !== data.socketID) {
+        console.log(socketID, data.payload.type);
+        socket.emit('candidate', data.payload);
+      }
+    }
+  });
+  /// for maing cal with RTCWEB Socket
 
   // for calling with redux
   socket.on('join-room', ({roomID, userIdd}) => {
@@ -288,6 +329,7 @@ io.on('connection', async socket => {
       delete userSocketMap[userId];
     }
     io.emit('getOnlineUsers', Object.keys(userSocketMap));
+    connectedPeers.delete(socket.id);
     console.log('disconnected user'); //socket.id
   });
 });
@@ -851,6 +893,9 @@ app.post('/api/message/create/:receiverId/:senderId', async (req, res) => {
 
     // implement socket io for real time messaging
     const receiverSocketId = getReceiverSocketId(receiverId);
+
+    console.log('receiver socket id ', receiverSocketId);
+
     if (receiverSocketId) {
       io.to(receiverSocketId).emit('newMessage', newMessage);
     }
@@ -1269,6 +1314,10 @@ app.post('/api/eventposts/add', async (req, res) => {
       eventDescription: req.body.eventDescription,
       // eventDate: req.body.eventDate,
       eventCategory: req.body.eventCategory,
+      // eventStartDate: req.body.state.eventStartDate,
+      // eventEndDate: req.body.state.eventEndDate,
+      // eventStartTime: req.body.eventStartTime,
+      // eventEndTime: req.body.eventEndTime,
       //   eventTime: req.body.eventTime,
       //   caption: req.body.caption,
       //   gender: req.body.gender,
@@ -1486,7 +1535,9 @@ app.put('/api/eventposts/viewPermission/:id', async (req, res) => {
 // get all the event posts by any user from db
 app.get('/api/eventpostsget/:id', async (req, res) => {
   try {
-    const eventPost = await EventPostData.find({userId: req.params.id});
+    const eventPost = await EventPostData.find({
+      userId: req.params.id,
+    }).populate('userId');
     if (!eventPost) {
       res
         .status(200)
